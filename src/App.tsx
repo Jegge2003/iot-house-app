@@ -6,7 +6,8 @@
 
 import "./App.scss";
 
-import type { ScreenViewport } from "@itwin/core-frontend";
+import { Visualization } from "./utils/Visualization";
+import type { IModelConnection, ScreenViewport } from "@itwin/core-frontend";
 import { FitViewTool, IModelApp, StandardViewId } from "@itwin/core-frontend";
 import { ECSchemaRpcInterface } from "@itwin/ecschema-rpcinterface-common";
 import { Flex, ProgressLinear } from "@itwin/itwinui-react";
@@ -133,11 +134,19 @@ const App: React.FC = () => {
   );
 
   const onIModelAppInit = useCallback(async () => {
-    // iModel now initialized
-    await TreeWidget.initialize();
-    await PropertyGridManager.initialize();
-    await MeasureTools.startup();
-    MeasurementActionToolbar.setDefaultActionProvider();
+    console.log("iModel App initialized! Hooray!")
+
+    IModelApp.viewManager.onViewOpen.addOnce (async (viewport) => {
+      const categoryIds = await Visualization.getCategoryIds (viewport.iModel);
+      viewport.changeCategoryDisplay (categoryIds, false);
+      // Visualization.toggleHouseExterior (viewport, false);
+      Visualization.changeBackground (viewport, "#add8e6");
+    })
+
+  }, []);
+
+  const onIModelConnected = useCallback(async (iModel: IModelConnection) => {
+    console.log(`Connected to iModel: ${iModel.name}`);
   }, []);
 
   return (
@@ -157,6 +166,7 @@ const App: React.FC = () => {
         viewCreatorOptions={viewCreatorOptions}
         enablePerformanceMonitors={true} // see description in the README (https://www.npmjs.com/package/@itwin/web-viewer-react)
         onIModelAppInit={onIModelAppInit}
+        onIModelConnected={onIModelConnected}
         mapLayerOptions={{
           BingMaps: {
             key: "key",
@@ -168,74 +178,7 @@ const App: React.FC = () => {
             rpcInterfaces: [ECSchemaRpcInterface],
           },
         }}
-        uiProviders={[
-          new ViewerNavigationToolsProvider(),
-          new ViewerContentToolsProvider({
-            vertical: {
-              measureGroup: false,
-            },
-          }),
-          new ViewerStatusbarItemsProvider(),
-          {
-            id: "TreeWidgetUIProvider",
-            getWidgets: () => [
-              createTreeWidget({
-                trees: [
-                  {
-                    id: ModelsTreeComponent.id,
-                    getLabel: () => ModelsTreeComponent.getLabel(),
-                    render: (props) => (
-                      <ModelsTreeComponent
-                        getSchemaContext={(iModel) => iModel.schemaContext}
-                        density={props.density}
-                        selectionStorage={unifiedSelectionStorage}
-                        selectionMode={"extended"}
-                        onPerformanceMeasured={props.onPerformanceMeasured}
-                        onFeatureUsed={props.onFeatureUsed}
-                      />
-                    ),
-                  },
-                  {
-                    id: CategoriesTreeComponent.id,
-                    getLabel: () => CategoriesTreeComponent.getLabel(),
-                    render: (props) => (
-                      <CategoriesTreeComponent
-                        getSchemaContext={(iModel) => iModel.schemaContext}
-                        density={props.density}
-                        selectionStorage={unifiedSelectionStorage}
-                        onPerformanceMeasured={props.onPerformanceMeasured}
-                        onFeatureUsed={props.onFeatureUsed}
-                      />
-                    ),
-                  },
-                ],
-              }),
-            ],
-          },
-          {
-            id: "PropertyGridUIProvider",
-            getWidgets: () => [
-              createPropertyGrid({
-                autoExpandChildCategories: true,
-                ancestorsNavigationControls: (props) => (
-                  <AncestorsNavigationControls {...props} />
-                ),
-                contextMenuItems: [
-                  (props) => <CopyPropertyTextContextMenuItem {...props} />,
-                ],
-                settingsMenuItems: [
-                  (props) => (
-                    <ShowHideNullValuesSettingsMenuItem
-                      {...props}
-                      persist={true}
-                    />
-                  ),
-                ],
-              }),
-            ],
-          },
-          new MeasureToolsUiItemsProvider(),
-        ]}
+        uiProviders={[]}
         selectionStorage={unifiedSelectionStorage}
       />
     </div>
