@@ -11,6 +11,7 @@ import type { IModelConnection, ScreenViewport } from "@itwin/core-frontend";
 import { FitViewTool, IModelApp, StandardViewId } from "@itwin/core-frontend";
 import { ECSchemaRpcInterface } from "@itwin/ecschema-rpcinterface-common";
 import { Flex, ProgressLinear } from "@itwin/itwinui-react";
+import {DeviceStatusApi} from "./apis/DeviceStatusApi";
 import {
   MeasurementActionToolbar,
   MeasureTools,
@@ -42,6 +43,8 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Auth } from "./Auth";
 import { history } from "./history";
 import { unifiedSelectionStorage } from "./selectionStorage";
+import { LawnDecorator } from "./decorators/LawnDecorator";
+import { SmartDeviceDecorator } from "./decorators/SmartDeviceDecorator";
 
 const App: React.FC = () => {
   const [iModelId, setIModelId] = useState(process.env.IMJS_IMODEL_ID);
@@ -136,12 +139,23 @@ const App: React.FC = () => {
   const onIModelAppInit = useCallback(async () => {
     console.log("iModel App initialized! Hooray!")
 
+    await TreeWidget.initialize();
+    await PropertyGridManager.initialize();
+    await MeasureTools.startup();
+    MeasurementActionToolbar.setDefaultActionProvider();
+
+    const data = await DeviceStatusApi.getData();
+
     IModelApp.viewManager.onViewOpen.addOnce (async (viewport) => {
       const categoryIds = await Visualization.getCategoryIds (viewport.iModel);
       viewport.changeCategoryDisplay (categoryIds, false);
       // Visualization.toggleHouseExterior (viewport, false);
       Visualization.changeBackground (viewport, "#add8e6");
     })
+
+    IModelApp.viewManager.addDecorator (new LawnDecorator());
+
+    IModelApp.viewManager.addDecorator (new SmartDeviceDecorator());
 
   }, []);
 
@@ -178,7 +192,11 @@ const App: React.FC = () => {
             rpcInterfaces: [ECSchemaRpcInterface],
           },
         }}
-        uiProviders={[]}
+        uiProviders={[
+          new ViewerNavigationToolsProvider(),
+          new ViewerStatusbarItemsProvider(),
+          new MeasureToolsUiItemsProvider(),
+        ]}
         selectionStorage={unifiedSelectionStorage}
       />
     </div>
