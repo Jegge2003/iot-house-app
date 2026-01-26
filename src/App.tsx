@@ -12,6 +12,8 @@ import { FitViewTool, IModelApp, StandardViewId } from "@itwin/core-frontend";
 import { ECSchemaRpcInterface } from "@itwin/ecschema-rpcinterface-common";
 import { Flex, ProgressLinear } from "@itwin/itwinui-react";
 import {DeviceStatusApi} from "./apis/DeviceStatusApi";
+import { useToaster } from "@itwin/itwinui-react";
+
 import {
   MeasurementActionToolbar,
   MeasureTools,
@@ -45,6 +47,8 @@ import { history } from "./history";
 import { unifiedSelectionStorage } from "./selectionStorage";
 import { LawnDecorator } from "./decorators/LawnDecorator";
 import { SmartDeviceDecorator } from "./decorators/SmartDeviceDecorator";
+import { ToggleVisibilityButtonProvider } from "./providers/ToggleVisibilityButtonProvider";
+import { SmartDeviceListWidgetProvider } from "./providers/SmartDeviceListWidgetProvider";
 
 const App: React.FC = () => {
   const [iModelId, setIModelId] = useState(process.env.IMJS_IMODEL_ID);
@@ -54,6 +58,8 @@ const App: React.FC = () => {
   );
 
   const accessToken = useAccessToken();
+
+  const toaster = useToaster();
 
   const authClient = Auth.getClient();
 
@@ -144,7 +150,9 @@ const App: React.FC = () => {
     await MeasureTools.startup();
     MeasurementActionToolbar.setDefaultActionProvider();
 
-    const data = await DeviceStatusApi.getData();
+    // const data = await DeviceStatusApi.getData();
+    // toaster.informational (JSON.stringify (data), { type: "persisting", hasCloseButton: true});
+    
 
     IModelApp.viewManager.onViewOpen.addOnce (async (viewport) => {
       const categoryIds = await Visualization.getCategoryIds (viewport.iModel);
@@ -195,7 +203,10 @@ const App: React.FC = () => {
         uiProviders={[
           new ViewerNavigationToolsProvider(),
           new ViewerStatusbarItemsProvider(),
-          new MeasureToolsUiItemsProvider(),
+          // new MeasureToolsUiItemsProvider(),
+          /// new ViewerContentToolsProvider(),
+          new ToggleVisibilityButtonProvider(),
+          new SmartDeviceListWidgetProvider(),
         ]}
         selectionStorage={unifiedSelectionStorage}
       />

@@ -4,6 +4,11 @@ import { IModelConnection, ScreenViewport } from "@itwin/core-frontend";
   
 export class Visualization {
 
+    public static toggleHouseExterior = async (viewport: ScreenViewport, show: boolean) => {
+        const categoryIds = await Visualization.getCategoryIds(viewport.iModel);
+        viewport.changeCategoryDisplay(categoryIds, show);    // show / hide house exterior.
+    }
+
     public static changeBackground = (viewport: ScreenViewport, bgColor: string) => {
         const displayStyleProps: DisplayStyleSettingsProps = {
             backgroundColor: ColorDef.fromString (bgColor).tbgr
@@ -38,6 +43,7 @@ export class Visualization {
             rowFormat: QueryRowFormat.UseJsPropertyNames,
         });
         const categoryIds = await results.toArray();
+        console.log(results);
 
         return categoryIds.map (element => element.id);
     };

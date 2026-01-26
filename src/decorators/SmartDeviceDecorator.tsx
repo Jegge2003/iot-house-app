@@ -1,34 +1,45 @@
+
+import { DecorateContext, Decorator } from "@itwin/core-frontend";
 import { IModelDataApi, SmartDevice } from "../apis/IModelDataApi";
-import { DecorateContext, Decorator, Marker } from "@itwin/core-frontend";
+import { SmartDeviceMarker } from "./SmartDeviceMarker";
+import { DeviceData, DeviceStatusApi } from "../apis/DeviceStatusApi";
 
+// A fresh Decorator.
 export class SmartDeviceDecorator implements Decorator {
-    private _markers: Marker[];
+  private _markers: SmartDeviceMarker[];
 
-    constructor () {
-        // Initialize the markers
-        this._markers = [];
-        this.addMarkers ();
-    }
+  constructor() {
+    // Initialize the markers
+    this._markers = [];
+    this.addMarkers();
+  }
 
-    private async addMarkers() {
-        // Fetch the data from the iModel
-        const devices: SmartDevice [] = await IModelDataApi.getSmartDevices ();
+  private async addMarkers() {
+    // Fetch the data from the iModel
+    const devices: SmartDevice[] = await IModelDataApi.getSmartDevices();
 
-        // Create a new marker for each of the devices
-        devices.forEach ((device) => {
-            const marker = new Marker (
-                { x: device.origin.x, y: device.origin.y, z: device.origin.z},
-                { x: 50, y: 50},
-            );
-            marker.label = device.smartDeviceId;
-            this._markers.push (marker) // within the devices array loop
-        });
-    }
+    // Fetch the API data using the method we created in DeviceStatusApi
+    const federatedData: DeviceData = await DeviceStatusApi.getData ();
 
-    public decorate (context: DecorateContext): void {
-        /* This is where we draw! */
-        this._markers.forEach (marker => {
-            marker.addDecoration (context);
-        });
-    } 
+    // Create a new marker for each of the devices
+    devices.forEach((device) => {
+      const marker = new SmartDeviceMarker(
+        { x: device.origin.x, y: device.origin.y, z: device.origin.z },
+        { x: 40, y: 40 },
+        device.smartDeviceId,
+        device.smartDeviceType,
+        federatedData[device.smartDeviceId],
+        device.id,
+      );
+      // We moved a whole 4 lines of code to a new home!
+      this._markers.push(marker); // within the devices array loop.
+    });
+  }
+  public decorate(context: DecorateContext): void {
+    /*  This is where we draw! */
+
+    this._markers.forEach(marker => {
+      marker.addDecoration(context);
+    });
+  }
 }
